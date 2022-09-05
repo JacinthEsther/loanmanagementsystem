@@ -6,10 +6,7 @@ import com.example.loanmanagementimalipay.dtos.requests.LoanRequest;
 import com.example.loanmanagementimalipay.dtos.responses.AddUserResponse;
 import com.example.loanmanagementimalipay.dtos.responses.LoanResponse;
 import com.example.loanmanagementimalipay.dtos.responses.PaymentReport;
-import com.example.loanmanagementimalipay.exceptions.NegativeLoanException;
-import com.example.loanmanagementimalipay.exceptions.NegativePaymentException;
-import com.example.loanmanagementimalipay.exceptions.NotEligibleException;
-import com.example.loanmanagementimalipay.exceptions.UserNotFoundException;
+import com.example.loanmanagementimalipay.exceptions.*;
 import com.example.loanmanagementimalipay.models.Gender;
 import com.example.loanmanagementimalipay.models.Loan;
 import com.example.loanmanagementimalipay.models.Payment;
@@ -154,7 +151,9 @@ public class UserServiceImpl implements UserService{
         if(amount <= 0.0) {
             throw new NegativePaymentException("You have not paid any amount");
         }
-
+                if(amount > loan.getLoanAmount().doubleValue()){
+                    throw new OverPaymentException("Amount exceed loan, Pay exactly "+ loan.getLoanAmount());
+                }
                 payment.setPaymentAmount(BigDecimal.valueOf(amount));
 //            log.info("i got here........... " + payment.getPaymentAmount());
                 payment.setPaymentDate(LocalDate.now());
