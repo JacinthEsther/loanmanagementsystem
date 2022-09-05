@@ -35,6 +35,6 @@ public class Loan {
     @JoinColumn(name = "user_id")
     private User user;
     @OneToMany(fetch=FetchType.EAGER)
-    @JoinColumn(name = "payment_id")
+    @JoinColumn(name = "loan_id")
     private List<Payment> payment;
 }

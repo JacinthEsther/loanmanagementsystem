@@ -74,7 +74,7 @@ public class LoanManagementController {
     }
 
     @PostMapping("/{email}")
-    public ResponseEntity<?> makePayment(@PathVariable String email, @RequestBody  double amount) {
+    public ResponseEntity<?> makePayment(@PathVariable String email, @RequestParam  double amount) {
 
         try {
             log.info(String.valueOf(amount));

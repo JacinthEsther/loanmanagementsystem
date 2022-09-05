@@ -33,8 +33,6 @@ public class Payment {
     )
     private Long id;
 
-
-
     private LocalDate paymentDate;
     private BigDecimal paymentAmount;
 }
