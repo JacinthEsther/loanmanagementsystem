@@ -9,7 +9,7 @@ import java.util.List;
 
 @Getter
 @Setter
-//@ToString
+@ToString
 @RequiredArgsConstructor
 @Entity
 @Table(name ="loans")

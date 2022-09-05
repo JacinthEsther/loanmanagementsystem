@@ -151,32 +151,34 @@ public class UserServiceImpl implements UserService{
         Payment payment = new Payment();
 //        log.info("i got here........... "+amount);
 
-        if(amount > 0.0 && amount <= loan.getLoanAmount().doubleValue()) {
-            payment.setPaymentAmount(BigDecimal.valueOf(amount));
-//            log.info("i got here........... " + payment.getPaymentAmount());
-            payment.setPaymentDate(LocalDate.now());
-
-            loan.setLoanBalance(loan.getLoanBalance().subtract(payment.getPaymentAmount()));
-            paymentRepository.save(payment);
-            loan.getPayment().add(payment);
-            Loan savedLoan = loanRepository.save(loan);
-
-            user.setLoan(savedLoan);
-           User savedUser= userRepository.save(user);
-           if(savedUser.getLoan().getLoanAmount().doubleValue()== 0.0){
-               savedUser.setLoan(null);
-               userRepository.save(savedUser);
-           }
-
-            PaymentReport paymentReport = new PaymentReport();
-
-            paymentReport.setPaymentDate(LocalDate.now().toString());
-            paymentReport.setPaymentTime(LocalDateTime.now());
-            paymentReport.setLoanBalance(savedLoan.getLoanBalance());
-
-            return paymentReport;
+        if(amount <= 0.0) {
+            throw new NegativePaymentException("You have not paid any amount");
         }
-        else throw new NegativePaymentException("You have not paid any amount");
+
+                payment.setPaymentAmount(BigDecimal.valueOf(amount));
+//            log.info("i got here........... " + payment.getPaymentAmount());
+                payment.setPaymentDate(LocalDate.now());
+
+                loan.setLoanBalance(loan.getLoanBalance().subtract(payment.getPaymentAmount()));
+                paymentRepository.save(payment);
+                loan.getPayment().add(payment);
+                Loan savedLoan = loanRepository.save(loan);
+
+                user.setLoan(savedLoan);
+                User savedUser = userRepository.save(user);
+                if (savedUser.getLoan().getLoanAmount().doubleValue() == 0.0) {
+                    savedUser.setLoan(null);
+                    userRepository.save(savedUser);
+                }
+
+                PaymentReport paymentReport = new PaymentReport();
+
+                paymentReport.setPaymentDate(LocalDate.now().toString());
+                paymentReport.setPaymentTime(LocalDateTime.now());
+                paymentReport.setLoanBalance(savedLoan.getLoanBalance());
+
+                return paymentReport;
+
     }
 
     @Override
