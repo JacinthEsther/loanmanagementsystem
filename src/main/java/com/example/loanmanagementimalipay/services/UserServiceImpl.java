@@ -6,6 +6,9 @@ import com.example.loanmanagementimalipay.dtos.requests.LoanRequest;
 import com.example.loanmanagementimalipay.dtos.responses.AddUserResponse;
 import com.example.loanmanagementimalipay.dtos.responses.LoanResponse;
 import com.example.loanmanagementimalipay.dtos.responses.PaymentReport;
+import com.example.loanmanagementimalipay.exceptions.NegativeLoanException;
+import com.example.loanmanagementimalipay.exceptions.NegativePaymentException;
+import com.example.loanmanagementimalipay.exceptions.NotEligibleException;
 import com.example.loanmanagementimalipay.exceptions.UserNotFoundException;
 import com.example.loanmanagementimalipay.models.Gender;
 import com.example.loanmanagementimalipay.models.Loan;
@@ -24,7 +27,7 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
+
 
 @Service
 @AllArgsConstructor
@@ -76,7 +79,6 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public void deleteAll() {
-//      User user1=  userRepository.findByEmail(user.getEmail()).orElseThrow();
 
       userRepository.deleteAll();
     }
@@ -91,32 +93,37 @@ public class UserServiceImpl implements UserService{
       User user =  userRepository.findByEmail(loanRequest.getEmail().toLowerCase())
               .orElseThrow(()->new UserNotFoundException("user does not exist"));
        LoanResponse response = new LoanResponse();
+       if(user.getLoan()== null) {
 
-      Loan loan = new Loan();
-      if(user.getAge()>= 18){
+           Loan loan = new Loan();
+           if (loanRequest.getLoanAmount() < 0.1) {
+               throw new NegativeLoanException("Loan cannot be negative or 0.0");
+           }
+           if (user.getAge() >= 18 && loanRequest.getLoanAmount() > 0.0) {
 
-          loan.setLoanAmount(user.getIncome().multiply(BigDecimal.valueOf(0.03)));
-          loan.setInterest(BigDecimal.valueOf((0.02)).multiply(loan.getLoanAmount()));
-          loan.setLoanDate(LocalDate.now());
-          loan.setLoanBalance(loan.getLoanAmount().add(loan.getInterest()));
+               loan.setLoanAmount(user.getIncome().multiply(BigDecimal.valueOf(0.03)));
+               loan.setInterest(BigDecimal.valueOf((0.02)).multiply(loan.getLoanAmount()));
+               loan.setLoanDate(LocalDate.now());
+               loan.setLoanBalance(loan.getLoanAmount().add(loan.getInterest()));
 
-          LocalDate dueDate = loan.getLoanDate().plusDays(50);
+               LocalDate dueDate = loan.getLoanDate().plusDays(50);
 
-          loan.setDueDate(dueDate);
-          loan.setUser(user);
-       Loan savedLoan = loanRepository.save(loan);
-       user.setLoan(savedLoan);
+               loan.setDueDate(dueDate);
+               loan.setUser(user);
+               Loan savedLoan = loanRepository.save(loan);
+               user.setLoan(savedLoan);
 
-       User savedUser =userRepository.save(user);
+               User savedUser = userRepository.save(user);
 
-       response.setLoanAmount(savedUser.getLoan().getLoanAmount());
-       response.setPayBackAmount(savedUser.getLoan().getLoanBalance());
-       response.setDueDate(savedUser.getLoan().getDueDate().toString());
+               response.setLoanAmount(savedUser.getLoan().getLoanAmount());
+               response.setPayBackAmount(savedUser.getLoan().getLoanBalance());
+               response.setDueDate(savedUser.getLoan().getDueDate().toString());
 
 
-
-      }
-        return response;
+           }
+           return response;
+       }
+       else throw new NotEligibleException("Please Repay #"+ user.getLoan().getLoanAmount() + " to get more Loan");
     }
 
     @Override
@@ -142,25 +149,34 @@ public class UserServiceImpl implements UserService{
 
         Loan loan= loanRepository.findById(user.getLoan().getId()).orElseThrow();
         Payment payment = new Payment();
-        log.info("i got here........... "+amount);
-        payment.setPaymentAmount(BigDecimal.valueOf(amount));
-        log.info("i got here........... "+payment.getPaymentAmount());
-        payment.setPaymentDate(LocalDate.now());
+//        log.info("i got here........... "+amount);
 
-        loan.setLoanBalance(loan.getLoanBalance().subtract(payment.getPaymentAmount()));
-        paymentRepository.save(payment);
-        loan.getPayment().add(payment);
-        Loan savedLoan=  loanRepository.save(loan);
-        user.setLoan(savedLoan);
-        userRepository.save(user);
+        if(amount > 0.0 && amount <= loan.getLoanAmount().doubleValue()) {
+            payment.setPaymentAmount(BigDecimal.valueOf(amount));
+//            log.info("i got here........... " + payment.getPaymentAmount());
+            payment.setPaymentDate(LocalDate.now());
 
-        PaymentReport paymentReport = new PaymentReport();
+            loan.setLoanBalance(loan.getLoanBalance().subtract(payment.getPaymentAmount()));
+            paymentRepository.save(payment);
+            loan.getPayment().add(payment);
+            Loan savedLoan = loanRepository.save(loan);
 
-        paymentReport.setPaymentDate(LocalDate.now().toString());
-        paymentReport.setPaymentTime(LocalDateTime.now());
-        paymentReport.setLoanBalance(savedLoan.getLoanBalance());
+            user.setLoan(savedLoan);
+           User savedUser= userRepository.save(user);
+           if(savedUser.getLoan().getLoanAmount().doubleValue()== 0.0){
+               savedUser.setLoan(null);
+               userRepository.save(savedUser);
+           }
 
-        return paymentReport;
+            PaymentReport paymentReport = new PaymentReport();
+
+            paymentReport.setPaymentDate(LocalDate.now().toString());
+            paymentReport.setPaymentTime(LocalDateTime.now());
+            paymentReport.setLoanBalance(savedLoan.getLoanBalance());
+
+            return paymentReport;
+        }
+        else throw new NegativePaymentException("You have not paid any amount");
     }
 
     @Override

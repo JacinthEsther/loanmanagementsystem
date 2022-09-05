@@ -31,9 +31,6 @@ public class LoanManagementController {
         }
     }
 
-//      "age": 22,
-//  "message": "created successfully",
-//  "userId": 752
 
     @GetMapping("/loanSystem/email/{email}/get")
     public ResponseEntity<?> findUserByEmail(@PathVariable String email) {

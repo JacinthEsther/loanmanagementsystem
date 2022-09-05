@@ -5,6 +5,8 @@ import com.example.loanmanagementimalipay.dtos.requests.LoanRequest;
 import com.example.loanmanagementimalipay.dtos.responses.AddUserResponse;
 import com.example.loanmanagementimalipay.dtos.responses.LoanResponse;
 import com.example.loanmanagementimalipay.dtos.responses.PaymentReport;
+import com.example.loanmanagementimalipay.exceptions.NegativeLoanException;
+import com.example.loanmanagementimalipay.exceptions.NegativePaymentException;
 import com.example.loanmanagementimalipay.models.Payment;
 import com.example.loanmanagementimalipay.models.User;
 import org.junit.jupiter.api.AfterEach;
@@ -82,6 +84,15 @@ class UserServiceImplTest {
 
     }
 
+    @Test
+    void userCannotLoanNegativeAmount() throws ParseException {
+        userService.add(user);
+        LoanRequest loanRequest = new LoanRequest();
+        loanRequest.setEmail("agb@gmail.com");
+        loanRequest.setLoanAmount(-23);
+        assertThrows(NegativeLoanException.class,()->userService.createUserLoan(loanRequest));
+    }
+
 
     @Test
     void userCanSearchForLoanWithUserIdTest() throws ParseException {
@@ -102,7 +113,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void userCanMakePaymentToLoan() throws ParseException {
+    void userCanMakePaymentGreaterThanZeroToLoan() throws ParseException {
          userService.add(user);
         LoanRequest loanRequest = new LoanRequest();
         loanRequest.setEmail("agb@gmail.com");
@@ -113,6 +124,31 @@ class UserServiceImplTest {
 
       assertEquals(7.00, loanBalance.getLoanBalance().doubleValue());
     }
+
+
+    @Test
+    void userCannotMakeNegativePaymentToLoanTest() throws ParseException {
+        userService.add(user);
+        LoanRequest loanRequest = new LoanRequest();
+        loanRequest.setEmail("agb@gmail.com");
+        loanRequest.setLoanAmount(290000);
+        userService.createUserLoan(loanRequest);
+
+        assertThrows(NegativePaymentException.class,()->userService.makePayment(-1000.0,user.getEmail()));
+    }
+
+    @Test
+    void userCannotMakeZeroPaymentToLoanTest() throws ParseException {
+        userService.add(user);
+        LoanRequest loanRequest = new LoanRequest();
+        loanRequest.setEmail("agb@gmail.com");
+        loanRequest.setLoanAmount(290000);
+        userService.createUserLoan(loanRequest);
+
+        assertThrows(NegativePaymentException.class,()->userService.makePayment(0.0,user.getEmail()));
+    }
+
+
 
 
     @Test
